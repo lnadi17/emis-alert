@@ -21,39 +21,33 @@ def main():
         if not os.path.exists('old'):
             print('getting first sample')
             with open('old', 'w') as f:
-                f.write(r.text)
+                f.write(parse_table(r.text))
             wait()
-        
-        soup = bs(r.text, 'lxml')
-        for semester_block in soup.findAll("div", {"class": "sem_block"}):
-            title = semester_block.find_next("div", {"class": "block_title"})
-            print(title.string[0] + ' სემესტრი')
-            table_body = semester_block.find_next("tbody")
-            rows = table_body.find_all("tr", recursive=False)
-            for row in rows:
-                print('data-lid:', row['data-lid'])
-                cols = row.find_all('td', recursive=False)
-                print('name:', ' '.join(cols[0].string.split()[1:]))
-                print('score:', cols[3].string, '(' + cols[4].string + ')')
-        
-        return
 
         while True:
             print('getting new sample')
             r = s.get(url, headers=headers, cookies=cookies)
             print('response:', r)
-            print(r.text)
 
             with open('new', 'w') as f:
-                f.write(r.text)
+                f.write(parse_table(r.text))
 
             if changed():
                 print('website content changed!')
-                # create soup
-                soup = bs(r.text)
-                for table in bs.find_all('table'):
-                    print(table)
-                break
+                system('diff old new > diff')
+
+                name = ''
+                with open("name", "r") as f:
+                    name = f.read()
+
+                message = ''
+                with open("message", "r") as f:
+                    message = f.read()
+                    message = message.replace('\n', '\\n')
+                    message = message.replace('<', '+')
+                    message = message.replace('>', '-')
+
+                system("messer --command='m \"" + name[:-1] + "\" " + message + '\'')
 
             system('mv new old')
             wait()
@@ -63,6 +57,21 @@ def changed():
 
 def wait():
     sleep(5)
+
+def parse_table(text):
+    result = ''
+    soup = bs(text, 'lxml')
+    for semester_block in soup.findAll("div", {"class": "sem_block"}):
+        title = semester_block.find_next("div", {"class": "block_title"})
+        result += title.string[0] + ' სემესტრი\n'
+        table_body = semester_block.find_next("tbody")
+        rows = table_body.find_all("tr", recursive=False)
+        for row in rows:
+            cols = row.find_all('td', recursive=False)
+            #result += row['data-lid'] + ', '
+            result += ' '.join(cols[0].string.split()[1:])
+            result += ', ' + cols[3].string + ' (' + cols[4].string + ')\n'
+    return result
 
 if __name__ == '__main__':
     main()
