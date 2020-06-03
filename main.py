@@ -19,10 +19,16 @@ def main():
     phpsessid = argv[1]
     cookies['PHPSESSID'] = phpsessid
 
+    name = ''
+    with open(abspath + "name", "r") as f:
+        name = f.read()
+    
+    send_message(name, "Emis Alert Service Started")
+
     with requests.Session() as s:
         r = s.get(url, headers=headers, cookies=cookies)
 
-        if not os.path.exists('old'):
+        if not os.path.exists(abspath + 'old'):
             print('getting first sample')
             with open(abspath + 'old', 'w') as f:
                 f.write(parse_table(r.text))
@@ -40,9 +46,6 @@ def main():
                 print('website content changed!')
                 system('diff {0}old {0}new > {0}diff'.format(abspath))
 
-                name = ''
-                with open(abspath + "name", "r") as f:
-                    name = f.read()
 
                 message = ''
                 with open(abspath + "diff", "r") as f:
@@ -51,7 +54,7 @@ def main():
                     message = message.replace('<', '+')
                     message = message.replace('>', '-')
 
-                system("messer --command='m \"" + name[:-1] + "\" " + message + '\'')
+                send_message(name, message)
 
             system('mv {0}new {0}old'.format(abspath))
             wait()
@@ -61,6 +64,9 @@ def changed():
 
 def wait():
     sleep(5)
+
+def send_message(name, message):
+    system("messer --command='m \"" + name[:-1] + "\" " + message + '\'')
 
 def parse_table(text):
     result = ''
