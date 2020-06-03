@@ -1,0 +1,10 @@
+[Unit]
+Description=Emis Alert Service
+
+[Service]
+ExecStart=/usr/bin/python3 /home/dogg/emis-alert/main.py 7mp1v1ibkh2vsnu12p1s54ama1 
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
