@@ -6,6 +6,10 @@ from os import system
 from time import sleep
 from bs4 import BeautifulSoup as bs
 
+print('emis-alert started')
+abspath = os.path.abspath(os.path.dirname(argv[0])) + '/'
+print('absolute path:', abspath)
+
 def main():
     url = 'https://emis.freeuni.edu.ge/index.php?mode=info&sub=nishnebi&lang=ka'
     
@@ -20,28 +24,28 @@ def main():
 
         if not os.path.exists('old'):
             print('getting first sample')
-            with open('old', 'w') as f:
+            with open(abspath + 'old', 'w') as f:
                 f.write(parse_table(r.text))
             wait()
 
         while True:
             print('getting new sample')
             r = s.get(url, headers=headers, cookies=cookies)
-            print('response:', r)
+            print('response:', r.status_code)
 
-            with open('new', 'w') as f:
+            with open(abspath + 'new', 'w') as f:
                 f.write(parse_table(r.text))
 
             if changed():
                 print('website content changed!')
-                system('diff old new > diff')
+                system('diff {0}old {0}new > {0}diff'.format(abspath))
 
                 name = ''
-                with open("name", "r") as f:
+                with open(abspath + "name", "r") as f:
                     name = f.read()
 
                 message = ''
-                with open("message", "r") as f:
+                with open(abspath + "diff", "r") as f:
                     message = f.read()
                     message = message.replace('\n', '\\n')
                     message = message.replace('<', '+')
@@ -49,11 +53,11 @@ def main():
 
                 system("messer --command='m \"" + name[:-1] + "\" " + message + '\'')
 
-            system('mv new old')
+            system('mv {0}new {0}old'.format(abspath))
             wait()
 
 def changed():
-    return not filecmp.cmp('old', 'new', shallow=False) 
+    return not filecmp.cmp(abspath + 'old', abspath + 'new', shallow=False) 
 
 def wait():
     sleep(5)
